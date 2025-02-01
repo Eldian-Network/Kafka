@@ -23,8 +23,8 @@ class config:
     #Info
     BOT_VERSION = "1.1"
     OWNER_ID = 7392339658
-    JOHAN_ID = 7637698136
-    OWNERS = [OWNER_ID, JOHAN_ID]
+    JOHAN = 7637698136
+    OWNERS = [OWNER_ID, JOHAN]
     OWNER_USERNAME = "jinwoo_sung4"
     SUPPORT_CHAT = -1002180149684
     SUPPORT_CHAT_USERNAME = "Eldian_Empire"
