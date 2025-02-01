@@ -10,6 +10,8 @@ import motor
 from telegram import __version__ as ptb_version
 import platform
 
+JOHAN = 7637698136
+
 @app.on_message(filters.command("alive" , config.COMMAND_PREFIXES))
 async def alive_command(client : Client , message : Message):
     # Calculate uptime
@@ -48,7 +50,7 @@ async def alive_command(client : Client , message : Message):
             InlineKeyboardButton("⚙️ Ɪɴғᴏ", callback_data="version_info")
         ],
         [
-            InlineKeyboardButton("👤 ᴏᴡɴᴇʀ", user_id=config.JOHAN)
+            InlineKeyboardButton("👤 ᴏᴡɴᴇʀ", user_id=JOHAN)
         ]
     ])
 
