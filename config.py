@@ -23,21 +23,21 @@ class config:
     #Info
     BOT_VERSION = "1.1"
     OWNER_ID = 7392339658
-    JOHAN = 
+    JOHAN = 7637698136
     OWNERS = [OWNER_ID, JOHAN]
     OWNER_USERNAME = "jinwoo_sung4"
     SUPPORT_CHAT = -1002180149684
     SUPPORT_CHAT_USERNAME = "Eldian_Empire"
     SUPPORT_CHAT_LINK = "https://t.me/Eldian_Empire"
-    LOG_CHANNEL = -1002339824685
-    ERROR_LOG_CHANNEL = -1002271494604
+    LOG_CHANNEL = -1002407416534
+    ERROR_LOG_CHANNEL = -1002440903994
     DOWNLOAD_LOCATION = "./downloads"
     COMMAND_PREFIXES = ["/" , "!" , "." , "#" , "$" , "%" , "&" , "?"] 
     CMD_STARTERS = "/.!&#%$"
-    STATS_IMG_URL = "https://envs.sh/Na0.jpg"
-    START_IMG_URL = "https://envs.sh/Naq.jpg"
-    HELP_IMG_URL = "https://envs.sh/Naw.jpg"
-    ALIVE_IMG_URL = "https://envs.sh/Na0.jpg"
+    STATS_IMG_URL = "https://files.catbox.moe/fdfc69.jpg"
+    START_IMG_URL = "https://files.catbox.moe/1rttkw.jpg"
+    HELP_IMG_URL = "https://files.catbox.moe/7qa0u5.jpg"
+    ALIVE_IMG_URL = "https://files.catbox.moe/xj52dr.jpg"
     
     
     #Database
