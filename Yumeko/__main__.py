@@ -79,7 +79,7 @@ def get_main_menu_buttons():
     buttons = [
         [
             InlineKeyboardButton(
-                "✨ Add Mikasa To Group ✨", url=f"https://t.me/{app.me.username}?startgroup=true"
+                "✨ Add Kafka To Group ✨", url=f"https://t.me/{app.me.username}?startgroup=true"
             )
         ],
         [
