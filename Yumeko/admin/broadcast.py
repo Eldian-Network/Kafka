@@ -4,7 +4,7 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton , Message
 from pyrogram.errors import FloodWait 
 from Yumeko import app
 from Yumeko.database import total_chats, total_users
-from config import OWNER_ID
+from config import config, OWNER_ID
 
 cancel_broadcast = False
 
