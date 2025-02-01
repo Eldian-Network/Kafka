@@ -46,7 +46,7 @@ async def broadcast_message(client : Client, message : Message , groups, users, 
 
 async def cancel_broadcast_callback(client, query):
     global cancel_broadcast
-    if query.from_user.id != config.OWNER_ID:
+    if query.from_user.id != config.OWNERS:
         await query.answer("𝖸𝗈𝗎 𝖽𝗈 𝗇𝗈𝗍 𝗁𝖺𝗏𝖾 𝗉𝖾𝗋𝗆𝗂𝗌𝗌𝗂𝗈𝗇 𝗍𝗈 𝖼𝖺𝗇𝖼𝖾𝗅 𝗍𝗁𝖾 𝖻𝗋𝗈𝖺𝖽𝖼𝖺𝗌𝗍.", show_alert=True)
         return
 
@@ -55,8 +55,8 @@ async def cancel_broadcast_callback(client, query):
     await query.answer("𝖡𝗋𝗈𝖺𝖽𝖼𝖺𝗌𝗍 𝖼𝖺𝗇𝖼𝖾𝗅𝗅𝖾𝖽.", show_alert=True)
 
 
-@app.on_message(filters.command("ycast") & filters.user(config.OWNER_ID) & filters.reply)
-@app.on_message(filters.regex(r"^(?i)Yumeko Bcast$") & filters.user(config.OWNER_ID) & filters.reply)
+@app.on_message(filters.command("ycast") & filters.user(config.OWNERS) & filters.reply)
+@app.on_message(filters.regex(r"^(?i)Yumeko Bcast$") & filters.user(config.OWNERS) & filters.reply)
 async def start_broadcast(client: Client, message: Message):
     global cancel_broadcast
     cancel_broadcast = False
