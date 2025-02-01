@@ -7,7 +7,7 @@ from pyrogram import filters
 from config import config 
 from Yumeko.decorator.errors import error
 from Yumeko.decorator.save import save
-
+#eval
 async def aexec(code, client, message):
     exec(
         "async def __aexec(client, message): "
