@@ -7,7 +7,7 @@ from config import config
 from Yumeko.decorator.errors import error
 from Yumeko.decorator.save import save
 
-OWNER_ID = config.OWNER_ID
+OWNERS = config.OWNERS
 
 # Path to the sudoers.json file
 sudoers_file = "sudoers.json"
@@ -30,15 +30,15 @@ def save_roles(data):
 # Ensure OWNER_ID is in Hokages
 def ensure_owner_is_hokage():
     roles = load_roles()
-    if OWNER_ID not in roles["Hokages"]:
-        roles["Hokages"].append(OWNER_ID)
+    if OWNERS not in roles["Hokages"]:
+        roles["Hokages"].append(OWNERS)
         save_roles(roles)
         
 
 # Check if user has sufficient permissions
 def has_permission(user_id):
     roles = load_roles()
-    return user_id == OWNER_ID or user_id in roles["Hokages"] or user_id in roles["Jonins"]
+    return user_id == OWNERS or user_id in roles["Hokages"] or user_id in roles["Jonins"]
 
 # Command to assign roles
 @pgram.on_message(filters.command("assign" , prefixes=config.COMMAND_PREFIXES))
@@ -87,7 +87,7 @@ async def handle_assign_callback(client: Client, callback: CallbackQuery):
     valid_roles = ["Hokage", "Jonin", "Chunin", "Genin"]
 
     # Check permissions
-    if cmd_user_id == OWNER_ID or cmd_user_id in roles["Hokages"]:
+    if cmd_user_id == OWNERS or cmd_user_id in roles["Hokages"]:
         allowed_roles = valid_roles
     elif cmd_user_id in roles["Jonins"]:
         allowed_roles = valid_roles[2:]  # Jonins can only assign Chunin or Genin
@@ -146,7 +146,7 @@ async def remove_role(client: Client, message: Message):
         await message.reply(f"**𝖴𝗌𝖾𝗋 𝖨𝖣: {𝗎𝗌𝖾𝗋_𝗂𝖽} 𝖽𝗈𝖾𝗌 𝗇𝗈𝗍 𝗁𝖺𝗏𝖾 𝖺𝗇𝗒 𝗋𝗈𝗅𝖾𝗌.**")
 
 # Command to list all users with roles
-@pgram.on_message(filters.command("staffs" , prefixes=config.COMMAND_PREFIXES) & filters.user(OWNER_ID))
+@pgram.on_message(filters.command("staffs" , prefixes=config.COMMAND_PREFIXES) & filters.user(OWNERS))
 @error
 @save
 async def list_staffs(client: Client, message: Message):
