@@ -5,14 +5,14 @@ class config:
     #Client
     API_ID = 28620311
     API_HASH = "3b5c4ed0598e48fc1ab552675555e693"
-    BOT_TOKEN = "8001037032:AAG-qmvzNkP7awMAARRbCcPQS-3x6bCKDxc"
-    BOT_NAME = "Mikasa"
-    BOT_USERNAME = "@Mikasa_Xprobot"
+    BOT_TOKEN = "7637698136:AAEsTUl0nuQQUIsb1j04Hgeue12ypz1mDDk"
+    BOT_NAME = "Kafka"
+    BOT_USERNAME = "@Kafka_Xprobot"
     BOT_ID = "8001037032"
     WORKERS = 30 #Don't Change 
     MAX_MESSAGE_CACHE_SIZE = 100 #Don't Change 
     MAX_CONCURRENT_TRANSMISSIONS = 10 #Don't Change 
-    SESSION_STRING = "BQG0thcAL8YJEBpB8O6hB7cpLywLwL796ryuzTVSjzyBNoppFAigY56JKqtfqT-C5XtRpKDn37ZfRS_XgRijD7w7I0r8QCdvKZj1dUOjNFBt87aU1JLz7OlOgwojkwP0bDEjen3Ze-9oQYn_qvRdQi3dLeyJdPYTL_cw7BZK-J3OLi75-oN77rsMC1ZsCIkL_bC6qeevQ9FnlN3qrLFUAdvPGxuuywAi2v6ZNIMyFt13BPE29I3VHOQdDz7rzM4_D_21K7Kwhv8EtegkYA28DIdFCxX3dNAnJ0OhYUsbCuThYAD3A7Wlyp00LmIX8Sx-0wfE1oELSHT3SkYcVWQd7M0VLGhSpAAAAAG6UfDgAA"
+    SESSION_STRING = ""
     
      
     #Git
@@ -23,6 +23,8 @@ class config:
     #Info
     BOT_VERSION = "1.1"
     OWNER_ID = 7392339658
+    JOHAN = 
+    OWNERS = [OWNER_ID, JOHAN]
     OWNER_USERNAME = "jinwoo_sung4"
     SUPPORT_CHAT = -1002180149684
     SUPPORT_CHAT_USERNAME = "Eldian_Empire"
@@ -40,7 +42,7 @@ class config:
     
     #Database
     MONGODB_URI = "mongodb://localhost:27017"
-    DATABASE_NAME = "Mikasa"
+    DATABASE_NAME = "Kafka"
 
     #API
     ARQ_API_KEY = "RLWCED-WZASYO-AWOLTB-ITBWTP-ARQ"
