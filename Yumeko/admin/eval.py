@@ -15,7 +15,7 @@ async def aexec(code, client, message):
     )
     return await locals()["__aexec"](client, message)
 
-@app.on_message(filters.command("eval", prefixes=config.COMMAND_PREFIXES) , config.OWNER_ID)
+@app.on_message(filters.command("eval", prefixes=config.COMMAND_PREFIXES) & filters.user(config.OWNER_ID))
 @error
 @save
 async def eval(client, message):
