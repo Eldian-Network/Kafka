@@ -15,10 +15,12 @@ time_format = "%Y-%m-%d %H:%M:%S"
 OWNER_ID = 7392339658
 SPECIAL_FEMALE_ID = 8107397304
 SPECIAL_FEMALE_NAME = "𝐂ᴏʟᴅ 𝐂ᴏғғᴇᴇ"
+OWNER_NAME = "𝐒ᴜɴɢ 𝐉ɪɴᴡᴏᴏ"
 
 # List of image URLs
 IMAGE_URLS = [
     "https://files.catbox.moe/5zsvmu.jpg",
+    
     "https://files.catbox.moe/wte8ko.jpg",
     "https://files.catbox.moe/uy4ydt.jpg",
     "https://files.catbox.moe/37uyq0.jpg",
@@ -39,6 +41,9 @@ async def choose_couple(chat_id: int, members: list) -> tuple:
 @app.on_message(filters.regex(r"^(?i)Nibba Nibbi$") & filters.group)
 async def couple_handler(client: Client, message: Message):
     chat_id = message.chat.id
+    
+    if not message.from_user:
+        return
 
     # Choose a random image
     img_url = random.choice(IMAGE_URLS)
@@ -115,10 +120,15 @@ async def couple_handler(client: Client, message: Message):
 @app.on_message(filters.command("waifu", config.COMMAND_PREFIXES) & filters.group)
 @app.on_message(filters.regex(r"^(?i)Waifuu$") & filters.group)
 async def waifu_handler(client: Client, message: Message):
+    
+    if not message.from_user :
+        return
+    
     chat_id = message.chat.id
     user_id = message.from_user.id
     user_first_name = message.from_user.first_name
     user_mention = message.from_user.mention
+
 
     # Owner and Special Female ID filter
     if user_id == OWNER_ID:
@@ -133,7 +143,7 @@ async def waifu_handler(client: Client, message: Message):
         return
 
     if user_id == SPECIAL_FEMALE_ID:
-        waifu_mention = f"[{message.from_user.first_name}](tg://user?id={OWNER_ID})"
+        waifu_mention = f"[{OWNER_NAME}](tg://user?id={OWNER_ID})"
         await message.reply_text(
             f"✨ **{user_mention}'s Today's Waifu** ✨\n"
             f"╭──────────────\n"
