@@ -64,6 +64,22 @@ async def couple_handler(client: Client, message: Message):
         )
         return
 
+       # Check if the command is used by OWNER_ID
+    if message.from_user.id == SPECIAL_FEMALE_ID:
+        male_mention = f"[{message.from_user.first_name}](tg://user?id={SPECIAL_FEMALE_ID})"
+        female_mention = f"[{OWNER_NAME}](tg://user?id={OWNER_ID})"
+        await client.send_photo(
+            chat_id,
+            photo=img_url,
+            caption=(
+                f"🎀  𝒞❁𝓊𝓅𝓁𝑒 ❀𝒻 𝒯𝒽𝑒 𝒟𝒶𝓎  🎀\n"
+                f"╭──────────────\n"
+                f"┊•➢ {male_mention} + {female_mention} = 💞\n"
+                f"╰───•➢♡"
+            )
+        )
+        return
+
     # Check if a couple is already chosen and within 24 hours
     couple = await couple_collection.find_one({"chat_id": chat_id})
     if couple:
