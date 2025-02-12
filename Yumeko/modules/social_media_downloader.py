@@ -1,16 +1,20 @@
 from pyrogram import Client, filters
-from pyrogram.types import Message
+from pyrogram.types import Message, InputMediaVideo
 import os
 import glob
 import random
-from Yumeko import app
 import yt_dlp
-from pyrogram.types import InputMediaVideo
+import re
+from Yumeko import app
 from Yumeko.helper.on_start import clear_downloads_folder
 from config import config 
 from Yumeko.decorator.save import save
 from Yumeko.decorator.errors import error 
 from youtubesearchpython.__future__ import VideosSearch
+from pyrogram.enums import ParseMode
+
+# Regex to detect URLs in messages
+URL_REGEX = r'(https?://[^\s]+)'
 
 def cookie_txt_file():
     folder_path = f"{os.getcwd()}/cookies"
@@ -20,9 +24,8 @@ def cookie_txt_file():
         raise FileNotFoundError("No .txt files found in the specified folder.")
     cookie_txt_file = random.choice(txt_files)
     with open(filename, 'a') as file:
-        file.write(f'Choosen File : {cookie_txt_file}\n')
-    return f"""cookies/{str(cookie_txt_file).split("/")[-1]}"""
-
+        file.write(f'Chosen File: {cookie_txt_file}\n')
+    return f"cookies/{str(cookie_txt_file).split('/')[-1]}"
 
 class Downloader:
     def __init__(self, download_path='downloads'):
@@ -35,23 +38,18 @@ class Downloader:
             'format': 'best',
             'outtmpl': os.path.join(self.download_path, '%(title)s.%(ext)s'),
             'writethumbnail': True,
-            "cookiefile" : cookie_txt_file(),
+            "cookiefile": cookie_txt_file(),
             'postprocessors': [
-                {
-                    'key': 'FFmpegVideoConvertor',
-                    'preferedformat': 'mp4',
-                },
-                {
-                    'key': 'EmbedThumbnail',
-                    'already_have_thumbnail': True,
-                },
+                {'key': 'FFmpegVideoConvertor', 'preferedformat': 'mp4'},
+                {'key': 'EmbedThumbnail', 'already_have_thumbnail': True},
             ],
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
-
             video_path = ydl.prepare_filename(info)
+
+            # Find the thumbnail
             thumb_path = None
             for file in os.listdir(self.download_path):
                 if file.startswith(info['title']) and file.endswith('.jpg'):
@@ -71,7 +69,7 @@ class Downloader:
 
 downloader = Downloader()
 
-@app.on_message(filters.command("ytdl" , prefixes=config.COMMAND_PREFIXES))
+@app.on_message(filters.command("ytdl", prefixes=config.COMMAND_PREFIXES))
 @error
 @save
 async def download_video(client: Client, message: Message):
@@ -79,24 +77,66 @@ async def download_video(client: Client, message: Message):
         await message.reply("Please provide a link.")
         return
 
-    a = await message.reply_text("**Please Wait Downloading.....**")
-
-
     url = message.command[1]
+    a = await message.reply_text("**Downloading, please wait...**")
+
     try:
         video_info = downloader.download(url)
-        await a.edit_media(InputMediaVideo(
-            media=video_info['video_path'],
+        await a.delete()
+        await message.reply_video(
+            video=video_info['video_path'],
             thumb=video_info['thumb_path'],
             caption=f"**{video_info['title']}**",
             width=video_info['width'],
             height=video_info['height'],
-            supports_streaming=True
-        ))
+            supports_streaming=True,
+            parse_mode=ParseMode.MARKDOWN
+        )
         clear_downloads_folder()
     except Exception as e:
-        return
+        await a.edit(f"An error occurred: {str(e)}")
 
+# Automatic URL detection and downloading
+@app.on_message(filters.text & ~filters.command("ytdl", prefixes=config.COMMAND_PREFIXES))
+@error
+@save
+async def auto_download(client: Client, message: Message):
+    urls = re.findall(URL_REGEX, message.text)  # Extract URLs from message
+
+    if not urls:
+        return  # No URLs found, ignore message
+
+    for url in urls:
+        try:
+            # Check if the URL is downloadable
+            with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+                info = ydl.extract_info(url, download=False)
+                if 'entries' in info:
+                    info = info['entries'][0]  # Handle playlists
+
+                if not info.get('url'):
+                    continue  # Skip if not downloadable
+
+            a = await message.reply_text("**Downloading video, please wait...**")
+
+            # Download the video
+            video_info = downloader.download(url)
+
+            await a.delete()
+            await message.reply_video(
+                video=video_info['video_path'],
+                thumb=video_info['thumb_path'],
+                caption=f"**{video_info['title']}**",
+                width=video_info['width'],
+                height=video_info['height'],
+                supports_streaming=True,
+                parse_mode=ParseMode.MARKDOWN
+            )
+            clear_downloads_folder()
+        except Exception as e:
+            continue  # Ignore non-downloadable URLs
+
+# Song Downloader Class
 class SongDownloader:
     def __init__(self, download_path='downloads'):
         self.download_path = download_path
@@ -120,24 +160,19 @@ class SongDownloader:
         ydl_opts = {
             'format': 'bestaudio/best',
             'outtmpl': os.path.join(self.download_path, '%(title)s.%(ext)s'),
-            "cookiefile" : cookie_txt_file(),
+            "cookiefile": cookie_txt_file(),
             'postprocessors': [
-                {
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                },
-                {
-                    'key': 'EmbedThumbnail',
-                },
+                {'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'},
+                {'key': 'EmbedThumbnail'},
             ],
             'writethumbnail': True,
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
-
             audio_path = ydl.prepare_filename(info).replace('.webm', '.mp3')
+
+            # Find the thumbnail
             thumb_path = None
             for file in os.listdir(self.download_path):
                 if file.startswith(info['title']) and file.endswith('.jpg'):
@@ -191,7 +226,6 @@ async def download_song(client: Client, message: Message):
         clear_downloads_folder()
     except Exception as e:
         await a.edit(f"An error occurred: {str(e)}")
-
 
 
 __module__ = "𝖣𝗈𝗐𝗇𝗅𝗈𝖺𝖽𝖾𝗋"
