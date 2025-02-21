@@ -90,7 +90,7 @@ async def setgfilter_handler(client: Client, message: Message):
 @app.on_message(filters.text & ~filters.private)
 async def trigger_filter(client: Client, message: Message):
     text = message.text.strip().lower()
-    filter_data = gfilter_collection.find_one({"filter_name": text})
+    filter_data = await gfilter_collection.find_one({"filter_name": text})
     if filter_data:
         channel_id = filter_data.get("channel_id")
         media_file_id = filter_data.get("media_file_id")
