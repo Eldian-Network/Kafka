@@ -2,7 +2,7 @@ from pyrogram import Client, filters, enums
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from datetime import datetime, timedelta
 import config
-from Yumeko import app
+from Yumeko import app, GFILTER_GROUP
 from Yumeko.database import gfilter_collection
 import time
 
@@ -53,7 +53,7 @@ async def set_global_filter(client: Client, message: Message):
     await message.reply(f"**✅ Global Filter Set!**\n**Name:** `{filter_name}`\n**Channel:** {channel.title}")
 
 # Global Filter Trigger
-@app.on_message(filters.group & filters.text & ~filters.command(["start", "help", "setgfilter", "removegfilter", "gfilters"]))  
+@app.on_message(filters.group & filters.text & ~filters.command(["start", "help", "setgfilter", "removegfilter", "gfilters"]), group=GFILTER_GROUP)  
 async def global_filter_handler(client: Client, message: Message):
     filter_name = message.text.strip().lower()
     filter_data = await gfilter_collection.find_one({"_id": filter_name})
