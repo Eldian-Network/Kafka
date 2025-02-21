@@ -19,8 +19,8 @@ async def set_global_filter(client: Client, message: Message):
         await message.reply("**Usage:**\n/setgfilter [filter_name] [channel_id]")
         return
 
-    filter_name = message.command[1].lower()
-    channel_id = message.command[2]
+    filter_name = " ".join(message.command[1:-1]).lower()  # Allow multiple words
+    channel_id = message.command[-1]
 
     try:
         channel = await client.get_chat(channel_id)
@@ -53,7 +53,7 @@ async def set_global_filter(client: Client, message: Message):
     await message.reply(f"**✅ Global Filter Set!**\n**Name:** `{filter_name}`\n**Channel:** {channel.title}")
 
 # Global Filter Trigger
-@app.on_message(filters.group & filters.text & ~filters.command)
+@app.on_message(filters.group & filters.text & ~filters.command())  # Fixed here
 async def global_filter_handler(client: Client, message: Message):
     filter_name = message.text.strip().lower()
     filter_data = await gfilter_collection.find_one({"_id": filter_name})
@@ -105,10 +105,11 @@ async def remove_global_filter(client: Client, message: Message):
         await message.reply("**Usage:**\n/removegfilter [filter_name]")
         return
 
-    filter_name = message.command[1].lower()
+    filter_name = " ".join(message.command[1:]).lower()  # Allow multiple words
     result = await gfilter_collection.delete_one({"_id": filter_name})
 
     if result.deleted_count:
         await message.reply(f"**✅ Removed global filter:** `{filter_name}`")
     else:
         await message.reply("**❌ No such global filter found!**")
+
