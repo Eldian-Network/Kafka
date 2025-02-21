@@ -51,17 +51,13 @@ async def alive_command(client : Client , message : Message):
             InlineKeyboardButton("⚙️ Ɪɴғᴏ", callback_data="version_info")
         ],
         [
-            InlineKeyboardButton("👤 ᴏᴡɴᴇʀ", callback_data="owner_7637698136")
+            InlineKeyboardButton("👤 ᴏᴡɴᴇʀ", url="tg://user?id=7637698136")
         ]
     ])
 
     # Edit the original response
     await x.edit_text(alive_message, reply_markup=buttons , invert_media=True )
 
-@app.on_callback_query(filters.regex(r"^owner_(\d+)$"))
-async def owner_callback(client, query):
-    user_id = int(query.data.split("_")[1])
-    await query.message.reply_text(f"Owner ID: {user_id}")
 
 @app.on_callback_query(filters.regex("version_info"))
 async def callback_query_handler(client: Client, callback_query):
