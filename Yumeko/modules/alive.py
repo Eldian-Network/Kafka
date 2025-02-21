@@ -1,8 +1,7 @@
 import time
 import psutil 
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton , Message
-from config import config  
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton , Message  
 from Yumeko import app , start_time , start_time_str
 import pyrogram
 import telethon
@@ -10,7 +9,7 @@ import motor
 from telegram import __version__ as ptb_version
 import platform
 
-JOHAN = config.JOHAN
+OWNER_ID = config.JOHAN
 
 
 @app.on_message(filters.command("alive" , config.COMMAND_PREFIXES))
@@ -51,7 +50,7 @@ async def alive_command(client : Client , message : Message):
             InlineKeyboardButton("⚙️ Ɪɴғᴏ", callback_data="version_info")
         ],
         [
-            InlineKeyboardButton("👤 ᴏᴡɴᴇʀ", user_id=JOHAN)
+            InlineKeyboardButton("👤 ᴏᴡɴᴇʀ", user_id=OWNER_ID)
         ]
     ])
 
