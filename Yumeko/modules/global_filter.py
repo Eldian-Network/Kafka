@@ -1,21 +1,26 @@
 import asyncio
-import re
+import logging
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 from Yumeko.database import gfilter_collection
-
-# Import config variables from config.py
 from config import config
-
-# Import the Pyrogram app from Yumeko
 from Yumeko import app
 
-# Config imports
+# Configure Logging
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
+
 OWNER_ID = config.OWNER_ID
 
-# Helper: Create a temporary invite link for a channel
+# Helper: Check if user is the owner
+def is_owner(user_id: int) -> bool:
+    return user_id == OWNER_ID
+
+# Helper: Create a temporary invite link
 async def create_temp_invite(channel_id: int, expire_in: int = 2400):
     try:
         invite = await app.create_chat_invite_link(
@@ -25,68 +30,84 @@ async def create_temp_invite(channel_id: int, expire_in: int = 2400):
         )
         return invite.invite_link
     except Exception as e:
-        print(f"Error creating invite link: {e}")
+        logging.error(f"Error creating invite link: {e}")
         return None
 
-# Helper: Check if the bot has access to the channel
-async def is_bot_admin(channel_id: int) -> bool:
-    try:
-        chat = await app.get_chat(channel_id)
-        return True  # If get_chat succeeds, the bot has access
-    except Exception as e:
-        print(f"Error checking bot access to channel {channel_id}: {e}")
-        return False
-
-# /setgfilter command (Supports multi-word filter names)
+# /setgfilter [filter name] [channel id]
 @app.on_message(filters.command("setgfilter") & filters.user(OWNER_ID))
 async def setgfilter_handler(client: Client, message: Message):
-    if not message.reply_to_message or not message.reply_to_message.media:
-        await message.reply("Please reply to a message with media (image/gif/sticker) to set a global filter.")
-        return
-
     try:
-        # Extract arguments inside square brackets
-        matches = re.findall(r'\[(.*?)\]', message.text)
-        if len(matches) < 2:
-            await message.reply("Usage: /setgfilter [filter name] [channel id]")
+        if not message.reply_to_message or not message.reply_to_message.media:
+            await message.reply("⚠️ Please reply to a media message (photo/gif/sticker) to set a global filter.")
             return
 
-        filter_name = matches[0].strip().lower()  
+        # Extract filter name and channel ID using square brackets
+        import re
+        match = re.search(r"\[(.+?)\]\s*\[(.+?)\]", message.text)
+        if not match:
+            await message.reply("⚠️ Usage: /setgfilter [filter name] [channel id]")
+            return
+
+        filter_name = match.group(1).strip().lower()
+        channel_id = match.group(2).strip()
+
+        if not channel_id.startswith("-100"):
+            await message.reply("⚠️ Invalid channel ID! Channel IDs must start with `-100`.")
+            return
+
+        channel_id = int(channel_id)
+
+        # Check if bot is an admin in the channel
         try:
-            channel_id = int(matches[1].strip())
-            if not str(channel_id).startswith("-100"):
-                raise ValueError
-        except ValueError:
-            await message.reply("Invalid channel ID! Please provide a valid numeric channel ID inside brackets.")
+            chat_member = await app.get_chat_member(chat_id=channel_id, user_id=client.me.id)
+            if chat_member.status not in ["administrator", "creator"]:
+                await message.reply("⚠️ I must be an **admin** in the specified channel.")
+                return
+        except Exception as e:
+            logging.error(f"Failed to verify admin status: {e}")
+            await message.reply("⚠️ Failed to verify channel admin status. Ensure the **channel ID is correct** and I am added.")
             return
 
-        # Check if bot has access to the channel
-        if not await is_bot_admin(channel_id):
-            await message.reply("I must be an admin in the specified channel. Please check my permissions and try again.")
-            return
+        # Identify media type and store file ID
+        media = None
+        media_type = None
+        if message.reply_to_message.sticker:
+            media = message.reply_to_message.sticker.file_id
+            media_type = "sticker"
+        elif message.reply_to_message.photo:
+            media = message.reply_to_message.photo.file_id
+            media_type = "photo"
+        elif message.reply_to_message.animation:
+            media = message.reply_to_message.animation.file_id
+            media_type = "animation"
+        elif message.reply_to_message.video:
+            media = message.reply_to_message.video.file_id
+            media_type = "video"
+        elif message.reply_to_message.document:
+            media = message.reply_to_message.document.file_id
+            media_type = "document"
 
-        # Extract media file ID
-        media = message.reply_to_message.sticker or \
-                message.reply_to_message.photo or \
-                message.reply_to_message.animation or \
-                message.reply_to_message.document
         if not media:
-            await message.reply("Media type not supported. Use image, gif, or sticker.")
+            await message.reply("⚠️ Unsupported media type. Use **image, gif, sticker, or video**.")
             return
 
-        # Save filter details in the database
+        # Save filter to the database
         filter_data = {
             "filter_name": filter_name,
             "channel_id": channel_id,
-            "media_file_id": media.file_id,
+            "media_file_id": media,
+            "media_type": media_type,
             "timestamp": datetime.now()
         }
         gfilter_collection.update_one({"filter_name": filter_name}, {"$set": filter_data}, upsert=True)
-        await message.reply(f"Global filter '{filter_name}' set successfully for channel {channel_id}.")
-    except Exception as e:
-        await message.reply(f"An error occurred: {e}")
+        logging.info(f"✅ Global filter '{filter_name}' set for channel {channel_id}.")
+        await message.reply(f"✅ **Global filter '{filter_name}'** set successfully for channel **{channel_id}**.")
 
-# Triggered filter in any group chat message (not command)
+    except Exception as e:
+        logging.error(f"Error setting global filter: {e}")
+        await message.reply(f"⚠️ An error occurred: {e}")
+
+# Trigger filter
 @app.on_message(filters.text & ~filters.private)
 async def trigger_filter(client: Client, message: Message):
     text = message.text.strip().lower()
@@ -99,6 +120,7 @@ async def trigger_filter(client: Client, message: Message):
 
     channel_id = filter_data.get("channel_id")
     media_file_id = filter_data.get("media_file_id")
+    media_type = filter_data.get("media_type")
 
     try:
         chat = await app.get_chat(chat_id=channel_id)
@@ -113,39 +135,65 @@ async def trigger_filter(client: Client, message: Message):
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(text=channel_name, url=invite_link)]])
 
     try:
-        # Determine media type from MongoDB and send accordingly
-        if "sticker" in filter_data:
+        # Send media based on type
+        if media_type == "sticker":
             await message.reply_sticker(sticker=media_file_id, reply_markup=keyboard)
-        elif "animation" in filter_data:
+        elif media_type == "animation":
             await message.reply_animation(animation=media_file_id, reply_markup=keyboard)
-        elif "photo" in filter_data:
+        elif media_type == "photo":
             await message.reply_photo(photo=media_file_id, reply_markup=keyboard)
-        elif "video" in filter_data:
+        elif media_type == "video":
             await message.reply_video(video=media_file_id, reply_markup=keyboard)
-        elif "document" in filter_data:
+        elif media_type == "document":
             await message.reply_document(document=media_file_id, reply_markup=keyboard)
         else:
             await message.reply("⚠️ Unsupported media type stored in the database.")
     except Exception as e:
-        await message.reply(f"Error sending media: {e}")
+        logging.error(f"Error sending media: {e}")
+        await message.reply(f"⚠️ Error sending media: {e}")
 
+# /gfilters command
+@app.on_message(filters.command("gfilters") & filters.user(OWNER_ID))
+async def list_gfilters(client: Client, message: Message):
+    try:
+        filters_cursor = gfilter_collection.find()
+        filters_list = []
 
+        async for f in filters_cursor:
+            try:
+                chat = await app.get_chat(chat_id=f["channel_id"])
+                channel_name = chat.title
+            except Exception:
+                channel_name = "Unknown"
 
-# /removegfilter command to remove a global filter (only for OWNER)
+            filters_list.append(f"📌 `{f['filter_name']}` → {channel_name}")
+
+        if not filters_list:
+            await message.reply("❌ No global filters set.")
+            return
+
+        await message.reply("\n".join(filters_list))
+    except Exception as e:
+        logging.error(f"Error listing filters: {e}")
+        await message.reply(f"⚠️ Error listing global filters: {e}")
+
+# /removegfilter command
 @app.on_message(filters.command("removegfilter") & filters.user(OWNER_ID))
 async def remove_gfilter(client: Client, message: Message):
     try:
-        matches = re.findall(r'\[(.*?)\]', message.text)
-        if not matches:
-            await message.reply("Usage: /removegfilter [filter name]")
+        match = re.search(r"\[(.+?)\]", message.text)
+        if not match:
+            await message.reply("⚠️ Usage: /removegfilter [filter name]")
             return
 
-        filter_name = matches[0].strip().lower()
+        filter_name = match.group(1).strip().lower()
         result = gfilter_collection.delete_one({"filter_name": filter_name})
+
         if result.deleted_count:
-            await message.reply(f"Global filter '{filter_name}' removed.")
+            await message.reply(f"✅ Global filter '{filter_name}' removed.")
         else:
-            await message.reply("No such global filter found.")
+            await message.reply("❌ No such global filter found.")
     except Exception as e:
-        await message.reply(f"An error occurred: {e}")
+        logging.error(f"Error removing filter: {e}")
+        await message.reply(f"⚠️ An error occurred: {e}")
 
