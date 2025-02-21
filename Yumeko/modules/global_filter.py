@@ -15,22 +15,27 @@ from Yumeko import app
 # Config imports
 OWNER_ID = config.OWNER_ID
 
-# Helper: Check if a user is the owner
-def is_owner(user_id: int) -> bool:
-    return user_id == OWNER_ID
-
 # Helper: Create a temporary invite link for a channel
-async def create_temp_invite(channel_id: int, expire_in: int = 2400):  # 2400 sec = 40 min
+async def create_temp_invite(channel_id: int, expire_in: int = 2400):
     try:
         invite = await app.create_chat_invite_link(
             chat_id=channel_id,
             expire_date=int((datetime.now() + timedelta(seconds=expire_in)).timestamp()),
-            member_limit=0  # unlimited joins
+            member_limit=0
         )
         return invite.invite_link
     except Exception as e:
         print(f"Error creating invite link: {e}")
         return None
+
+# Helper: Check if the bot is an admin
+async def is_bot_admin(channel_id: int) -> bool:
+    try:
+        chat_member = await app.get_chat_member(chat_id=channel_id, user_id=app.me.id)
+        return chat_member.status in ["administrator", "creator"]
+    except Exception as e:
+        print(f"Error checking admin status: {e}")
+        return False
 
 # /setgfilter command (Supports multi-word filter names)
 @app.on_message(filters.command("setgfilter") & filters.user(OWNER_ID))
@@ -46,21 +51,18 @@ async def setgfilter_handler(client: Client, message: Message):
             await message.reply("Usage: /setgfilter [filter name] [channel id]")
             return
 
-        filter_name = matches[0].strip().lower()  # Preserve spaces in filter name
+        filter_name = matches[0].strip().lower()  
         try:
             channel_id = int(matches[1].strip())
+            if not str(channel_id).startswith("-100"):
+                raise ValueError
         except ValueError:
             await message.reply("Invalid channel ID! Please provide a valid numeric channel ID inside brackets.")
             return
 
-        # Check if the bot is an admin of the channel
-        try:
-            chat_member = await app.get_chat_member(chat_id=channel_id, user_id=client.me.id)
-            if chat_member.status not in ["administrator", "creator"]:
-                await message.reply("I must be an admin in the specified channel.")
-                return
-        except Exception as e:
-            await message.reply("Failed to verify channel admin status. Make sure the channel ID is correct and I have been added.")
+        # Check if bot is admin in the channel
+        if not await is_bot_admin(channel_id):
+            await message.reply("I must be an admin in the specified channel. Please check my permissions.")
             return
 
         # Extract media file ID
