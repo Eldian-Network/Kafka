@@ -5,7 +5,10 @@ from pymongo import MongoClient
 from datetime import datetime, timedelta
 
 # Import config variables from config.py
-from config import config as cfg
+from config import config
+
+mongo_client = MongoClient(MONGODB_URI)  # Ensure MONGODB_URI is assigned before using it
+db = mongo_client[DATABASE_NAME]
 
 
 # Import the Pyrogram app from Yumeko
@@ -17,9 +20,9 @@ db = mongo_client[DATABASE_NAME]
 gfilter_collection = db["global_filters"]
 
 # cfg imports
-MONGODB_URI = cfg.MONGODB_URI
-DATABASE_NAME = cfg.DATABASE_NAME
-OWNER_ID = cfg.OWNER_ID
+MONGODB_URI = config.MONGODB_URI
+DATABASE_NAME = config.DATABASE_NAME
+OWNER_ID = config.OWNER_ID
 
 
 # Helper: Check if a user is the owner
