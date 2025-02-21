@@ -51,7 +51,7 @@ async def alive_command(client : Client , message : Message):
             InlineKeyboardButton("⚙️ Ɪɴғᴏ", callback_data="version_info")
         ],
         [
-            InlineKeyboardButton("👤 ᴏᴡɴᴇʀ", user_id=config.DEV_ID)
+            InlineKeyboardButton("👤 ᴏᴡɴᴇʀ", url=f"tg://user?id=7637698136")
         ]
     ])
 
