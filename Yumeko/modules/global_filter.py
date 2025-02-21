@@ -113,47 +113,23 @@ async def trigger_filter(client: Client, message: Message):
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(text=channel_name, url=invite_link)]])
 
     try:
-        # Send media based on type
-        if message.reply_to_message.sticker:
+        # Determine media type from MongoDB and send accordingly
+        if "sticker" in filter_data:
             await message.reply_sticker(sticker=media_file_id, reply_markup=keyboard)
-        elif message.reply_to_message.animation:
+        elif "animation" in filter_data:
             await message.reply_animation(animation=media_file_id, reply_markup=keyboard)
-        elif message.reply_to_message.photo:
+        elif "photo" in filter_data:
             await message.reply_photo(photo=media_file_id, reply_markup=keyboard)
-        elif message.reply_to_message.video:
+        elif "video" in filter_data:
             await message.reply_video(video=media_file_id, reply_markup=keyboard)
-        elif message.reply_to_message.document:
+        elif "document" in filter_data:
             await message.reply_document(document=media_file_id, reply_markup=keyboard)
         else:
-            await message.reply("⚠️ Unsupported media type. Please use a sticker, image, video, or GIF.")
+            await message.reply("⚠️ Unsupported media type stored in the database.")
     except Exception as e:
         await message.reply(f"Error sending media: {e}")
 
 
-# /gfilters command to list all filters (only for OWNER)
-@app.on_message(filters.command("gfilters") & filters.user(OWNER_ID))
-async def list_gfilters(client: Client, message: Message):
-    try:
-        filters_cursor = gfilter_collection.find()
-        filter_list = list(filters_cursor)
-        if not filter_list:
-            await message.reply("No global filters set.")
-            return
-
-        text_lines = []
-        for f in filter_list:
-            try:
-                chat = await app.get_chat(chat_id=f["channel_id"])
-                channel_name = chat.title
-            except Exception:
-                channel_name = "Unknown"
-
-            line = f"**{f['filter_name']}** - `{f['channel_id']}` ({channel_name})"
-            text_lines.append(line)
-
-        await message.reply("\n".join(text_lines))
-    except Exception as e:
-        await message.reply(f"Error listing global filters: {e}")
 
 # /removegfilter command to remove a global filter (only for OWNER)
 @app.on_message(filters.command("removegfilter") & filters.user(OWNER_ID))
