@@ -1,158 +1,82 @@
+from functools import wraps
 import asyncio
-import re
-from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
-from pymongo import MongoClient
-from datetime import datetime, timedelta
-from Yumeko.database import gfilter_collection
+from pyrogram.errors import *
+from pyrogram.types import Message, InlineQuery
+from config import config 
+from Yumeko import log , app
 
-# Import config variables from config.py
-from config import config
-
-# Import the Pyrogram app from Yumeko
-from Yumeko import app
-
-# Config imports
-OWNER_ID = config.OWNER_ID
-
-# Helper: Check if a user is the owner
-def is_owner(user_id: int) -> bool:
-    return user_id == OWNER_ID
-
-# Helper: Create a temporary invite link for a channel
-async def create_temp_invite(channel_id: int, expire_in: int = 2400):  # 2400 sec = 40 min
-    try:
-        invite = await app.create_chat_invite_link(
-            chat_id=channel_id,
-            expire_date=int((datetime.now() + timedelta(seconds=expire_in)).timestamp()),
-            member_limit=0  # unlimited joins
-        )
-        return invite.invite_link
-    except Exception as e:
-        print(f"Error creating invite link: {e}")
-        return None
-
-# /setgfilter command (Supports multi-word filter names)
-@app.on_message(filters.command("setgfilter") & filters.user(OWNER_ID))
-async def setgfilter_handler(client: Client, message: Message):
-    if not message.reply_to_message or not message.reply_to_message.media:
-        await message.reply("Please reply to a message with media (image/gif/sticker) to set a global filter.")
-        return
-
-    try:
-        # Extract arguments inside square brackets
-        matches = re.findall(r'\[(.*?)\]', message.text)
-        if len(matches) < 2:
-            await message.reply("Usage: /setgfilter [filter name] [channel id]")
-            return
-
-        filter_name = matches[0].strip().lower()  # Preserve spaces in filter name
+def error(func):
+    @wraps(func)
+    async def wrapper(client, update, *args, **kwargs):  # 'update' can be a Message or InlineQuery
         try:
-            channel_id = int(matches[1].strip())
-        except ValueError:
-            await message.reply("Invalid channel ID! Please provide a valid numeric channel ID inside brackets.")
-            return
-
-        # Check if the bot is an admin of the channel
-        try:
-            chat_member = await app.get_chat_member(chat_id=channel_id, user_id=client.me.id)
-            if chat_member.status not in ["administrator", "creator"]:
-                await message.reply("I must be an admin in the specified channel.")
-                return
+            # Call the actual function
+            return await func(client, update, *args, **kwargs)
+        except FloodWait as e:
+            log.warning(f"Flood wait for {e.value} seconds.")
+            await asyncio.sleep(e.value)
+            # Retry the function after the wait
+            return await func(client, update, *args, **kwargs)
+        except BadRequest as e:
+            log.error(f"Bad request error: {e}")
+            await log_error(client, f"Bad request error: {str(e)}", update)
+        except Forbidden as e:
+            log.error(f"Forbidden error: {e}")
+            await log_error(client, f"Forbidden error: {str(e)}", update)
+        except InternalServerError as e:
+            log.error(f"Internal server error: {e}")
+            await log_error(client, f"Internal server error: {str(e)}", update)
+        except PeerIdInvalid as e:
+            log.error(f"Peer ID invalid: {e}")
+            await log_error(client, f"Peer ID invalid: {str(e)}", update)
+        except MessageNotModified as e:
+            log.error(f"Message not modified error: {e}")
+            await log_error(client, f"Message not modified: {str(e)}", update)
+        except ChatAdminRequired as e:
+            log.error(f"Chat admin required: {e}")
+            await log_error(client, f"Chat admin required error: {str(e)}", update)
+        except ChannelInvalid as e:
+            log.error(f"Channel invalid error: {e}")
+            await log_error(client, f"Channel invalid: {str(e)}", update)
+        except UserNotParticipant as e:
+            log.error(f"User not a participant error: {e}")
+            await log_error(client, f"User not a participant: {str(e)}", update)
+        except RPCError as e:
+            log.error(f"RPC error occurred: {e}")
+            await log_error(client, f"RPC error occurred: {str(e)}", update)
+        except asyncio.TimeoutError as e:
+            log.error(f"Timeout error: {e}")
+            await log_error(client, f"Timeout error: {str(e)}", update)
+        except ValueError as e:
+            log.error(f"Value error: {e}")
+            await log_error(client, f"Value error: {str(e)}", update)
+        except TypeError as e:
+            log.error(f"Type error: {e}")
+            await log_error(client, f"Type error: {str(e)}", update)
         except Exception as e:
-            await message.reply("Failed to verify channel admin status. Make sure the channel ID is correct and I have been added.")
-            return
+            log.exception(f"An unexpected error occurred: {e}")
+            await log_error(client, f"Unexpected error: {str(e)}", update)
 
-        # Extract media file ID
-        media = message.reply_to_message.sticker or \
-                message.reply_to_message.photo or \
-                message.reply_to_message.animation or \
-                message.reply_to_message.document
-        if not media:
-            await message.reply("Media type not supported. Use image, gif, or sticker.")
-            return
+    return wrapper
 
-        # Save filter details in the database
-        filter_data = {
-            "filter_name": filter_name,
-            "channel_id": channel_id,
-            "media_file_id": media.file_id,
-            "timestamp": datetime.now()
-        }
-        gfilter_collection.update_one({"filter_name": filter_name}, {"$set": filter_data}, upsert=True)
-        await message.reply(f"Global filter '{filter_name}' set successfully for channel {channel_id}.")
-    except Exception as e:
-        await message.reply(f"An error occurred: {e}")
+# Function to send error logs to the log channel
+async def log_error(client, error_message, update):
+    log_text = f"**Error Occurred**\n**Error:** `{error_message}`\n"
 
-# Triggered filter in any group chat message (not command)
-@app.on_message(filters.text & ~filters.private)
-async def trigger_filter(client: Client, message: Message):
-    text = message.text.strip().lower()
-    filter_data = gfilter_collection.find_one({"filter_name": text})
-    if filter_data:
-        channel_id = filter_data.get("channel_id")
-        media_file_id = filter_data.get("media_file_id")
-
-        try:
-            chat = await app.get_chat(chat_id=channel_id)
-            channel_name = chat.title
-        except Exception:
-            channel_name = "Unknown Channel"
-
-        invite_link = await create_temp_invite(channel_id)
-        if not invite_link:
-            invite_link = "Unable to generate link."
-
-        keyboard = InlineKeyboardMarkup(
-            [[InlineKeyboardButton(text=channel_name, url=invite_link)]]
+    if isinstance(update, Message):  # If it's a message object
+        log_text += (
+            f"**Chat:** {update.chat.title or 'Private Chat'} (`{update.chat.id}`)\n"
+            f"**User:** {update.from_user.first_name} (`{update.from_user.id}`)\n"
+            f"**Message:** {update.text or 'No text content'}\n"
         )
+    elif isinstance(update, InlineQuery):  # If it's an inline query
+        log_text += (
+            f"**User:** {update.from_user.first_name} (`{update.from_user.id}`)\n"
+            f"**Inline Query:** {update.query or 'No query content'}\n"
+        )
+    else:
+        log_text += "**Unknown update type**"
 
-        try:
-            await message.reply_sticker(sticker=media_file_id, reply_markup=keyboard)
-        except Exception:
-            await message.reply_document(document=media_file_id, reply_markup=keyboard)
-
-# /gfilters command to list all filters (only for OWNER)
-@app.on_message(filters.command("gfilters") & filters.user(OWNER_ID))
-async def list_gfilters(client: Client, message: Message):
-    try:
-        filters_cursor = gfilter_collection.find()
-        filter_list = list(filters_cursor)
-        if not filter_list:
-            await message.reply("No global filters set.")
-            return
-
-        text_lines = []
-        for f in filter_list:
-            try:
-                chat = await app.get_chat(chat_id=f["channel_id"])
-                channel_name = chat.title
-            except Exception:
-                channel_name = "Unknown"
-
-            line = f"**{f['filter_name']}** - `{f['channel_id']}` ({channel_name})"
-            text_lines.append(line)
-
-        await message.reply("\n".join(text_lines))
-    except Exception as e:
-        await message.reply(f"Error listing global filters: {e}")
-
-# /removegfilter command to remove a global filter (only for OWNER)
-@app.on_message(filters.command("removegfilter") & filters.user(OWNER_ID))
-async def remove_gfilter(client: Client, message: Message):
-    try:
-        matches = re.findall(r'\[(.*?)\]', message.text)
-        if not matches:
-            await message.reply("Usage: /removegfilter [filter name]")
-            return
-
-        filter_name = matches[0].strip().lower()
-        result = gfilter_collection.delete_one({"filter_name": filter_name})
-        if result.deleted_count:
-            await message.reply(f"Global filter '{filter_name}' removed.")
-        else:
-            await message.reply("No such global filter found.")
-    except Exception as e:
-        await message.reply(f"An error occurred: {e}")
-
-
+  #  try:
+   #     await app.send_message(chat_id=config.ERROR_LOG_CHANNEL, text=log_text)
+ #   except Exception as log_exception:
+ #       log.error(f"Failed to log error in the log channel: {log_exception}")
