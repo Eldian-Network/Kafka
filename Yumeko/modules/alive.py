@@ -9,7 +9,7 @@ import motor
 from telegram import __version__ as ptb_version
 import platform
 
-OWNER_ID = config.JOHAN
+OWNER_ID = [7637698136]
 
 
 @app.on_message(filters.command("alive" , config.COMMAND_PREFIXES))
