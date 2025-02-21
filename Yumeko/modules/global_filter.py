@@ -53,7 +53,7 @@ async def set_global_filter(client: Client, message: Message):
     await message.reply(f"**✅ Global Filter Set!**\n**Name:** `{filter_name}`\n**Channel:** {channel.title}")
 
 # Global Filter Trigger
-@app.on_message(filters.group & filters.text & ~filters.command())  # Fixed here
+@app.on_message(filters.group & filters.text & ~filters.command(["start", "help", "setgfilter", "removegfilter", "gfilters"]))  
 async def global_filter_handler(client: Client, message: Message):
     filter_name = message.text.strip().lower()
     filter_data = await gfilter_collection.find_one({"_id": filter_name})
