@@ -3,25 +3,17 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 from pymongo import MongoClient
 from datetime import datetime, timedelta
+from Yumeko.database import gfilter_collection 
 
 # Import config variables from config.py
 from config import config
 
-mongo_client = MongoClient(MONGODB_URI)  # Ensure MONGODB_URI is assigned before using it
-db = mongo_client[DATABASE_NAME]
-
-
 # Import the Pyrogram app from Yumeko
 from Yumeko import app
 
-# Setup MongoDB client and collection for global filters
-mongo_client = MongoClient(MONGODB_URI)
-db = mongo_client[DATABASE_NAME]
-gfilter_collection = db["global_filters"]
+#gfilter_collection = db["global_filters"]
 
 # cfg imports
-MONGODB_URI = config.MONGODB_URI
-DATABASE_NAME = config.DATABASE_NAME
 OWNER_ID = config.OWNER_ID
 
 
