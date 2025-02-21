@@ -35,6 +35,7 @@ karma_collection = db.Karma
 info_collection = db.UserInfo
 greetings_collection = db.WelcomeData
 banned_chats =db.BannedChats
+gfilter_collection = db["global_filters"]
 
 async def setup_indexes():
 
