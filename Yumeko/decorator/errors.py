@@ -76,7 +76,7 @@ async def log_error(client, error_message, update):
     else:
         log_text += "**Unknown update type**"
 
-    try:
-        await app.send_message(chat_id=config.ERROR_LOG_CHANNEL, text=log_text)
-    except Exception as log_exception:
-        log.error(f"Failed to log error in the log channel: {log_exception}")
+  #  try:
+#        await app.send_message(chat_id=config.ERROR_LOG_CHANNEL, text=log_text)
+#    except Exception as log_exception:
+ #       log.error(f"Failed to log error in the log channel: {log_exception}")
