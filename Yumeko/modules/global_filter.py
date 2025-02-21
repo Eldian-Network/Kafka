@@ -90,29 +90,45 @@ async def setgfilter_handler(client: Client, message: Message):
 @app.on_message(filters.text & ~filters.private)
 async def trigger_filter(client: Client, message: Message):
     text = message.text.strip().lower()
+
+    # Fetch filter from MongoDB (ASYNC)
     filter_data = await gfilter_collection.find_one({"filter_name": text})
-    if filter_data:
-        channel_id = filter_data.get("channel_id")
-        media_file_id = filter_data.get("media_file_id")
 
-        try:
-            chat = await app.get_chat(chat_id=channel_id)
-            channel_name = chat.title
-        except Exception:
-            channel_name = "Unknown Channel"
+    if not filter_data:
+        return  
 
-        invite_link = await create_temp_invite(channel_id)
-        if not invite_link:
-            invite_link = "Unable to generate link."
+    channel_id = filter_data.get("channel_id")
+    media_file_id = filter_data.get("media_file_id")
 
-        keyboard = InlineKeyboardMarkup(
-            [[InlineKeyboardButton(text=channel_name, url=invite_link)]]
-        )
+    try:
+        chat = await app.get_chat(chat_id=channel_id)
+        channel_name = chat.title
+    except Exception:
+        channel_name = "Unknown Channel"
 
-        try:
+    invite_link = await create_temp_invite(channel_id)
+    if not invite_link:
+        invite_link = "Unable to generate link."
+
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(text=channel_name, url=invite_link)]])
+
+    try:
+        # Send media based on type
+        if message.reply_to_message.sticker:
             await message.reply_sticker(sticker=media_file_id, reply_markup=keyboard)
-        except Exception:
+        elif message.reply_to_message.animation:
+            await message.reply_animation(animation=media_file_id, reply_markup=keyboard)
+        elif message.reply_to_message.photo:
+            await message.reply_photo(photo=media_file_id, reply_markup=keyboard)
+        elif message.reply_to_message.video:
+            await message.reply_video(video=media_file_id, reply_markup=keyboard)
+        elif message.reply_to_message.document:
             await message.reply_document(document=media_file_id, reply_markup=keyboard)
+        else:
+            await message.reply("⚠️ Unsupported media type. Please use a sticker, image, video, or GIF.")
+    except Exception as e:
+        await message.reply(f"Error sending media: {e}")
+
 
 # /gfilters command to list all filters (only for OWNER)
 @app.on_message(filters.command("gfilters") & filters.user(OWNER_ID))
