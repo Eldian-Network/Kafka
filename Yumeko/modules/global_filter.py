@@ -28,13 +28,13 @@ async def create_temp_invite(channel_id: int, expire_in: int = 2400):
         print(f"Error creating invite link: {e}")
         return None
 
-# Helper: Check if the bot is an admin
+# Helper: Check if the bot has access to the channel
 async def is_bot_admin(channel_id: int) -> bool:
     try:
-        chat_member = await app.get_chat_member(chat_id=channel_id, user_id=app.me.id)
-        return chat_member.status in ["administrator", "creator"]
+        chat = await app.get_chat(channel_id)
+        return True  # If get_chat succeeds, the bot has access
     except Exception as e:
-        print(f"Error checking admin status: {e}")
+        print(f"Error checking bot access to channel {channel_id}: {e}")
         return False
 
 # /setgfilter command (Supports multi-word filter names)
@@ -60,9 +60,9 @@ async def setgfilter_handler(client: Client, message: Message):
             await message.reply("Invalid channel ID! Please provide a valid numeric channel ID inside brackets.")
             return
 
-        # Check if bot is admin in the channel
+        # Check if bot has access to the channel
         if not await is_bot_admin(channel_id):
-            await message.reply("I must be an admin in the specified channel. Please check my permissions.")
+            await message.reply("I must be an admin in the specified channel. Please check my permissions and try again.")
             return
 
         # Extract media file ID
