@@ -15,7 +15,7 @@ from asyncio import sleep
 from Yumeko.decorator.save import save 
 from Yumeko.decorator.errors import error 
 
-MODULES = ["modules", "watchers", "admin", "decorator"]
+MODULES = ["modules", "watchers", "admin", "decorator", "gfilter"]
 LOADED_MODULES = {}
 
 # Load modules and extract __module__ and __help__
