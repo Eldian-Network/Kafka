@@ -86,26 +86,28 @@ async def global_filter_handler(client: Client, message: Message):
 async def list_global_filters(client: Client, message: Message):
     filters_list = []
     
-    async for filter_data in gfilter_collection.find({}):  # Ensure {} is used to fetch all documents
-        filters_list.append(
-            f"• `{filter_data['_id']}` - {filter_data['channel_name']} (`{filter_data['channel_id']}`)"
-        )
+    async for filter_data in gfilter_collection.find({}):  # Fetch all global filters
+        filter_name = filter_data.get("_id", "Unknown")
+        channel_name = filter_data.get("channel_name", "Unknown Channel")
+        channel_id = filter_data.get("channel_id", "Unknown ID")
+
+        filters_list.append(f"• `{filter_name}` - {channel_name} (`{channel_id}`)")
 
     if not filters_list:
         await message.reply("**No global filters set!**")
         return
 
-    filters_text = "**📝 Global Filters ({count}):**\n\n".format(count=len(filters_list))
-    filters_text += "\n".join(filters_list)
+    filters_text = f"**📝 Global Filters ({len(filters_list)}):**\n\n" + "\n".join(filters_list)
 
-    # Ensure Telegram message length doesn't exceed 4096 characters
+    # Handle Telegram's 4096-character message limit
     if len(filters_text) > 4000:
         with open("gfilters.txt", "w") as f:
             f.write(filters_text)
         await message.reply_document("gfilters.txt", caption="📜 **List of Global Filters**")
     else:
         await message.reply(filters_text)
-        
+
+
 
 # Remove Global Filter
 @app.on_message(filters.command("removegfilter") & filters.user(OWNER_ID))
