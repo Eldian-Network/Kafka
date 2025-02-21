@@ -3,13 +3,14 @@ import psutil
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton , Message  
 from Yumeko import app , start_time , start_time_str
+from config import config
 import pyrogram
 import telethon
 import motor
 from telegram import __version__ as ptb_version
 import platform
 
-OWNER_ID = [7637698136]
+
 
 
 @app.on_message(filters.command("alive" , config.COMMAND_PREFIXES))
