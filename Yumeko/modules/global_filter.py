@@ -11,11 +11,8 @@ from config import config
 # Import the Pyrogram app from Yumeko
 from Yumeko import app
 
-#gfilter_collection = db["global_filters"]
-
 # cfg imports
 OWNER_ID = config.OWNER_ID
-
 
 # Helper: Check if a user is the owner
 def is_owner(user_id: int) -> bool:
@@ -37,20 +34,22 @@ async def create_temp_invite(channel_id: int, expire_in: int = 2400):  # 2400 se
 # /setgfilter command
 @app.on_message(filters.command("setgfilter") & filters.user(OWNER_ID))
 async def setgfilter_handler(client: Client, message: Message):
-    # Must be a reply to a media message
     if not message.reply_to_message or not message.reply_to_message.media:
-        await message.reply("Please reply to a message with media (image/gif/sticker) to set a global filter.")
+        await message.reply("Please reply to a media message (image/gif/sticker) to set a global filter.")
         return
 
     try:
-        # Get command arguments: expecting filter name and channel id
         args = message.text.split(maxsplit=2)
         if len(args) < 3:
             await message.reply("Usage: /setgfilter <filter_name> <channel_id>")
             return
 
-        filter_name = args[1].strip().lower()  # converting filter name to lowercase for consistency
-        channel_id = int(args[2].strip())
+        filter_name = args[1].strip().lower()
+        try:
+            channel_id = int(args[2].strip())
+        except ValueError:
+            await message.reply("Invalid channel ID! Please provide a valid numeric channel ID.")
+            return
 
         # Check if the bot is an admin of the channel
         try:
@@ -58,20 +57,18 @@ async def setgfilter_handler(client: Client, message: Message):
             if chat_member.status not in ["administrator", "creator"]:
                 await message.reply("I must be an admin in the specified channel.")
                 return
-        except Exception as e:
-            await message.reply("Failed to verify channel admin status. Make sure the channel ID is correct and I have been added.")
+        except Exception:
+            await message.reply("Failed to verify channel admin status. Ensure the channel ID is correct and I am added.")
             return
 
-        # Convert the media to a sticker representation. Here we simply store the file_id.
         media = message.reply_to_message.sticker or \
                 message.reply_to_message.photo or \
                 message.reply_to_message.animation or \
-                message.reply_to_message.document  # if it might be a gif etc.
+                message.reply_to_message.document
         if not media:
-            await message.reply("Media type not supported. Use image, gif, or sticker.")
+            await message.reply("Unsupported media type. Use image, gif, or sticker.")
             return
 
-        # Save filter details in the database
         filter_data = {
             "filter_name": filter_name,
             "channel_id": channel_id,
@@ -83,67 +80,48 @@ async def setgfilter_handler(client: Client, message: Message):
     except Exception as e:
         await message.reply(f"An error occurred: {e}")
 
-# Triggered filter in any group chat message (not command)
 @app.on_message(filters.text & ~filters.private)
 async def trigger_filter(client: Client, message: Message):
     text = message.text.strip().lower()
-    # Find if a filter exists with the given name
     filter_data = gfilter_collection.find_one({"filter_name": text})
     if filter_data:
         channel_id = filter_data.get("channel_id")
         media_file_id = filter_data.get("media_file_id")
-        # Attempt to get channel info for name and invite link
         try:
             chat = await app.get_chat(chat_id=channel_id)
             channel_name = chat.title
         except Exception:
             channel_name = "Unknown Channel"
 
-        # Create a temporary invite link for the channel
-        invite_link = await create_temp_invite(channel_id)
-        if not invite_link:
-            invite_link = "Unable to generate link."
+        invite_link = await create_temp_invite(channel_id) or "Unable to generate link."
+        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(text=channel_name, url=invite_link)]])
 
-        # Prepare inline keyboard button
-        keyboard = InlineKeyboardMarkup(
-            [
-                [InlineKeyboardButton(text=channel_name, url=invite_link)]
-            ]
-        )
-
-        # Send the stored media with the inline button
         try:
-            # Depending on the type of media stored, send as sticker or photo etc.
-            # Here we assume the media is a sticker if possible.
             await message.reply_sticker(sticker=media_file_id, reply_markup=keyboard)
         except Exception:
-            # Fallback: send as a document if sending as sticker fails.
             await message.reply_document(document=media_file_id, reply_markup=keyboard)
 
-# /gfilters command to list all filters (only for OWNER)
 @app.on_message(filters.command("gfilters") & filters.user(OWNER_ID))
 async def list_gfilters(client: Client, message: Message):
     try:
-        filters_cursor = gfilter_collection.find()
-        if filters_cursor.count() == 0:
+        filters_list = list(gfilter_collection.find())
+        if not filters_list:
             await message.reply("No global filters set.")
             return
 
         text_lines = []
-        async for f in filters_cursor:
-            # Get channel name if possible
+        for f in filters_list:
             try:
                 chat = await app.get_chat(chat_id=f["channel_id"])
                 channel_name = chat.title
             except Exception:
                 channel_name = "Unknown"
-            line = f"{f['filter_name']} {f['channel_id']} {channel_name}"
-            text_lines.append(line)
+            text_lines.append(f"{f['filter_name']} - {channel_name} ({f['channel_id']})")
+
         await message.reply("\n".join(text_lines))
     except Exception as e:
         await message.reply(f"Error listing global filters: {e}")
 
-# /removegfilter command to remove a global filter (only for OWNER)
 @app.on_message(filters.command("removegfilter") & filters.user(OWNER_ID))
 async def remove_gfilter(client: Client, message: Message):
     try:
@@ -151,6 +129,7 @@ async def remove_gfilter(client: Client, message: Message):
         if len(args) < 2:
             await message.reply("Usage: /removegfilter <filter_name>")
             return
+        
         filter_name = args[1].strip().lower()
         result = gfilter_collection.delete_one({"filter_name": filter_name})
         if result.deleted_count:
@@ -159,5 +138,4 @@ async def remove_gfilter(client: Client, message: Message):
             await message.reply("No such global filter found.")
     except Exception as e:
         await message.reply(f"An error occurred: {e}")
-
 
