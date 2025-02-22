@@ -16,6 +16,8 @@ from Yumeko.helper.anti_flood_helper import *
 from Yumeko.helper.handler import MultiCommandHandler
 from Yumeko.database.approve_db import is_user_approved
 
+flood_tracker = {}
+
 async def flood_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     settings = await get_antiflood_settings(update.effective_chat.id)
     user = update.effective_user  # Assign user directly, even if None
@@ -215,44 +217,50 @@ async def clearflood_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 # Flood detection logic
 async def flood_detection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    user = update.effective_user  # Assign user directly, even if None
+    user = update.effective_user  # Ensure user exists
 
+    if not user:
+        return  # Ignore updates without a user
+
+    user_id = user.id
     settings = await get_antiflood_settings(chat_id)
-    if settings["flood_threshold"] == 0:
+
+    # Ensure flood_threshold exists
+    flood_threshold = settings.get("flood_threshold", 5)
+    if flood_threshold == 0:
         return  # Antiflood disabled
 
-
-    # Check if user exists
-    if not user:
-        return  # Exit if no user is associated with the update
-    
-    user_id = user.id
-    
-    if await is_user_approved(chat_id , user_id):
+    # Skip detection for approved users or admins
+    if await is_user_approved(chat_id, user_id) or await is_user_admin(update, context, user_id):
         return
 
-    # Skip flood detection for admins
-    if await is_user_admin(update, context, user_id):
-        return
+    # Initialize flood tracking for user if not already present
+    if user_id not in flood_tracker:
+        flood_tracker[user_id] = {"count": 0, "timestamps": [], "messages": []}
 
+    # Ensure message exists before tracking
+    if not update.message:
+        return  # Ignore non-message updates
 
-    # Update user message count and track messages
+    # Update user flood tracking
     flood_tracker[user_id]["count"] += 1
     flood_tracker[user_id]["timestamps"].append(update.message.date)
     flood_tracker[user_id]["messages"].append(update.message)
 
-    # Check regular flood
-    if flood_tracker[user_id]["count"] >= settings["flood_threshold"]:
+    # Check for regular flood violation
+    if flood_tracker[user_id]["count"] >= flood_threshold:
         await take_flood_action(update, context, settings, user_id)
-        flood_tracker[user_id] = {"count": 0, "timestamps": [], "messages": []}
+        flood_tracker[user_id] = {"count": 0, "timestamps": [], "messages": []}  # Reset after action
 
-    # Check timed flood
-    elif settings["flood_timer_count"] > 0:
-        timestamps = flood_tracker[user_id]["timestamps"]
-        if len(timestamps) >= settings["flood_timer_count"] and \
-           (timestamps[-1] - timestamps[-settings["flood_timer_count"]]).total_seconds() <= settings["flood_timer_duration"]:
+    # Check for timed flood violation
+    timed_count = settings.get("flood_timer_count", 0)
+    timed_duration = settings.get("flood_timer_duration", 5)  # Default 5 seconds
+    timestamps = flood_tracker[user_id]["timestamps"]
+
+    if timed_count > 0 and len(timestamps) >= timed_count:
+        if (timestamps[-1] - timestamps[-timed_count]).total_seconds() <= timed_duration:
             await take_flood_action(update, context, settings, user_id)
-            flood_tracker[user_id] = {"count": 0, "timestamps": [], "messages": []}
+            flood_tracker[user_id] = {"count": 0, "timestamps": [], "messages": []}  # Reset after action
 
 # Updated take_flood_action to use custom duration
 async def take_flood_action(update: Update, context: ContextTypes.DEFAULT_TYPE, settings, user_id):
