@@ -230,6 +230,10 @@ async def flood_detection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if flood_threshold == 0:
         return  # Antiflood disabled
 
+    # Ensure flood_action exists
+    flood_action = settings.get("flood_action", "mute")  # Default to "mute"
+    settings["flood_action"] = flood_action  # Ensure it's set
+
     # Skip detection for approved users or admins
     if await is_user_approved(chat_id, user_id) or await is_user_admin(update, context, user_id):
         return
@@ -261,6 +265,7 @@ async def flood_detection(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if (timestamps[-1] - timestamps[-timed_count]).total_seconds() <= timed_duration:
             await take_flood_action(update, context, settings, user_id)
             flood_tracker[user_id] = {"count": 0, "timestamps": [], "messages": []}  # Reset after action
+
 
 # Updated take_flood_action to use custom duration
 async def take_flood_action(update: Update, context: ContextTypes.DEFAULT_TYPE, settings, user_id):
