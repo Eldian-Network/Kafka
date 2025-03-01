@@ -88,6 +88,11 @@ def get_main_menu_buttons():
 
             InlineKeyboardButton("⚙️ Commands ⚙️", callback_data="yumeko_help")
         ]
+        [
+            InlineKeyboardButton(
+                "🐐 Owner", user_id=config.JOHAN
+            )
+        ],
     ]
     return InlineKeyboardMarkup(buttons)
 
