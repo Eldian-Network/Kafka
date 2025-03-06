@@ -1,43 +1,40 @@
-from Yumeko.database import nightmode_collection
+from Yumeko.database import db  # Ensure this imports your MongoDB connection
 
-async def enable_nightmode(chat_id: int, chat_title: str, owner_id: int, start_time: str = "23:00", end_time: str = "09:00"):
-    """Enable night mode for a specific chat and save its settings."""
-    await nightmode_collection.update_one(
+NIGHTMODE_COLLECTION = db.nightmode  # Collection for night mode settings
+
+async def enable_nightmode(chat_id, chat_title, owner_id, start_time="23:00", end_time="09:00"):
+    """Enable night mode for a chat with default or custom timing."""
+    await NIGHTMODE_COLLECTION.update_one(
         {"chat_id": chat_id},
-        {
-            "$set": {
-                "nightmode_enabled": True,
-                "chat_title": chat_title,
-                "owner_id": owner_id,
-                "nightmode_start": start_time,
-                "nightmode_end": end_time,
-            }
-        },
+        {"$set": {
+            "chat_title": chat_title,
+            "owner_id": owner_id,
+            "nightmode_enabled": True,
+            "start_time": start_time,
+            "end_time": end_time
+        }},
         upsert=True
     )
 
-async def disable_nightmode(chat_id: int):
-    """Disable night mode for a specific chat."""
-    await nightmode_collection.update_one(
+async def disable_nightmode(chat_id):
+    """Disable night mode for a chat."""
+    await NIGHTMODE_COLLECTION.update_one(
         {"chat_id": chat_id},
-        {"$set": {"nightmode_enabled": False}},
-        upsert=True
+        {"$set": {"nightmode_enabled": False}}
     )
 
-async def set_nightmode_time(chat_id: int, start_time: str, end_time: str):
-    """Update night mode start and end time for a chat."""
-    await nightmode_collection.update_one(
-        {"chat_id": chat_id},
-        {"$set": {"nightmode_start": start_time, "nightmode_end": end_time}},
-        upsert=True
-    )
-
-async def get_nightmode_settings(chat_id: int):
+async def get_nightmode_chat_info(chat_id):
     """Retrieve night mode settings for a specific chat."""
-    return await nightmode_collection.find_one({"chat_id": chat_id})
+    return await NIGHTMODE_COLLECTION.find_one({"chat_id": chat_id})
+
+async def update_nightmode_timings(chat_id, start_time, end_time):
+    """Update the night mode start and end time for a chat."""
+    await NIGHTMODE_COLLECTION.update_one(
+        {"chat_id": chat_id},
+        {"$set": {"start_time": start_time, "end_time": end_time}}
+    )
 
 async def get_all_nightmode_enabled_chats():
-    """Retrieve all chats with night mode enabled and their settings."""
-    cursor = nightmode_collection.find({"nightmode_enabled": True})
-    return [chat async for chat in cursor]
+    """Fetch all chats where night mode is enabled."""
+    return await NIGHTMODE_COLLECTION.find({"nightmode_enabled": True}).to_list(None)
     
