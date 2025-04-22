@@ -7,6 +7,10 @@ db = client[config.DATABASE_NAME]
 MCL = MongoClient(config.MONGODB_URI)
 MDB = MCL[config.DATABASE_NAME]
 
+
+
+
+
 user_collection = db.Users
 afk_collection = db.AFK
 rules_collection = db.Rules
@@ -37,6 +41,14 @@ greetings_collection = db.WelcomeData
 banned_chats =db.BannedChats
 gfilter_collection = db["global_filters"]
 notes = db.notes["notes"]
+
+# Cache for database results with TTL (Time To Live)
+DB_CACHE = TTLCache(maxsize=10000, ttl=60)  # 1 minute cache
+# Cache for frequently accessed items that should persist longer
+PERSISTENT_CACHE = LRUCache(maxsize=5000)
+# Lock for cache operations
+_cache_lock = asyncio.Lock()
+
 
 async def setup_indexes():
 
