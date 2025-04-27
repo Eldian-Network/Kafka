@@ -90,7 +90,7 @@ def get_main_menu_buttons():
         ],
         [
             InlineKeyboardButton(
-                "🐐 Owner", user_id=config.OWNER_ID
+                "🐐 Owner", user_id=config.KHUSHI 
             )
         ],
     ]
