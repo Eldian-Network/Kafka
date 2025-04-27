@@ -103,6 +103,8 @@ async def start_cmd(_, message : Message):
         await help_command(Client, message)
         return
     
+    await message.react("🍓" , big = True)
+    
     x = await message.reply_text(f"`ʜᴇʟʟᴏ {message.from_user.first_name} ʜᴏᴡ ᴀʀᴇ ʏᴏᴜ \nᴡᴀɪᴛ ᴀ ᴍᴏᴍᴇɴᴛ ʙʀᴏ . . . <3`")
     await sleep(0.4)
     await x.edit_text("🎊")
@@ -112,6 +114,7 @@ async def start_cmd(_, message : Message):
     await x.edit_text("ꜱᴛᴀʀᴛɪɴɢ... ")
     await sleep(0.5)
     await x.delete()
+    
     
     await message.reply_cached_media(file_id = "CAACAgUAAx0CaYJXkAACDfhjPVg7KWbBT2g44lRtiN24JpzNaQACcwcAAiRO8VXjkW9AnnwsLSoE")    
     
