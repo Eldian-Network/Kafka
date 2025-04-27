@@ -79,20 +79,17 @@ def get_main_menu_buttons():
     buttons = [
         [
             InlineKeyboardButton(
-                "✨ Add Kafka To Group ✨", url=f"https://t.me/{app.me.username}?startgroup=true"
+                "➕ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ", url=f"https://t.me/{app.me.username}?startgroup=true"
             )
         ],
         [
-            InlineKeyboardButton("🍃 Support 🍃", url=config.SUPPORT_CHAT_LINK),
+            InlineKeyboardButton("🤝 Sᴜᴘᴘᴏʀᴛ", url=config.SUPPORT_CHAT_LINK),
+            InlineKeyboardButton("👤 ᴏᴡɴᴇʀ", user_id=config.KHUSHI)
+        ],
+        [
+            InlineKeyboardButton("Cᴏᴍᴍᴀɴᴅs", callback_data="yumeko_help")
             
-
-            InlineKeyboardButton("⚙️ Commands ⚙️", callback_data="yumeko_help")
-        ],
-        [
-            InlineKeyboardButton(
-                "🐐 Owner", user_id=config.KHUSHI 
-            )
-        ],
+        ]
     ]
     return InlineKeyboardMarkup(buttons)
 
