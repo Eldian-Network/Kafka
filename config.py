@@ -5,7 +5,7 @@ class config:
     #Client
     API_ID = 28620311
     API_HASH = "3b5c4ed0598e48fc1ab552675555e693"
-    BOT_TOKEN = "7637698136:AAFaSJRo7mEcTN_2vserIqtikleilMG5Slo"
+    BOT_TOKEN = "7637698136:AAHH7eIe-CvT_b7y2CGNC1LoIeJ35fbqU18"
     BOT_NAME = "Kafka"
     BOT_USERNAME = "@Kafka_Xprobot"
     BOT_ID = "8001037032"
