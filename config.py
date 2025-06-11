@@ -22,7 +22,7 @@ class config:
 
     #Info
     BOT_VERSION = "1.1"
-    OWNER_ID = 6037958673
+    OWNER_ID = 7392339658
     DEV_ID = 6037958673
     JOHAN = 6037958673
     OWNERS = [OWNER_ID, JOHAN]
