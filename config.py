@@ -30,8 +30,8 @@ class config:
     KHUSHI = 6037958673
     KHUSHI_USERNAME = "BewithSophia"
     SUPPORT_CHAT = -1002180149684
-    SUPPORT_CHAT_USERNAME = "famtreeclub"
-    SUPPORT_CHAT_LINK = "https://t.me/+3oqq3ps1CJtkNGZl"
+    SUPPORT_CHAT_USERNAME = "kafkasupport"
+    SUPPORT_CHAT_LINK = "https://t.me/kafkasupport"
     LOG_CHANNEL = -1002407416534
     ERROR_LOG_CHANNEL = -1002440903994
     DOWNLOAD_LOCATION = "./downloads"
