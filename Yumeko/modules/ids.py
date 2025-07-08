@@ -2,6 +2,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from Yumeko import app
 import config
+import asyncio
 from pyrogram.enums import MessageEntityType
 from Yumeko.decorator.errors import error
 from Yumeko.database.common_chat_db import get_common_chat_count
@@ -63,111 +64,104 @@ async def get_id(client: Client, message: Message):
 
     await message.reply_text("".join(response))
 
-
 @app.on_message(filters.command("info", prefixes=config.config.COMMAND_PREFIXES))
 @error
 async def get_user_info(client: Client, message: Message):
-
-    try :
-
-            if message.reply_to_message:
-                user = message.reply_to_message.from_user
-            elif len(message.command) > 1:
-                target = message.command[1]
-                if target.isdigit():
-                    user = await client.get_users(int(target))
-                else:
-                    user = await client.get_users(target)
+    try:
+        if message.reply_to_message:
+            user = message.reply_to_message.from_user
+        elif len(message.command) > 1:
+            target = message.command[1]
+            if target.isdigit():
+                user = await client.get_users(int(target))
             else:
-                user = message.from_user
-        
-            x = await message.reply_text("Fetching User Info.")
-        
-            # Get user info
-            user_id = user.id
-            first_name = user.first_name or "N/A"
-            last_name = user.last_name or "N/A"
-            username = f"@{user.username}" or "N/A"
-            mention = user.mention or "N/A"
-            dc_id = user.dc_id or "N/A"
-        
-            # Fetch full user info for bio
-            try:
-                full_user = await app.get_chat(user.id)
-                bio = full_user.bio or "N/A"
-            except Exception:
-                bio = "N/A"
-        
-            await x.edit_text("Fetching User Info...")
-        
-            # Get profile photo
-            photo_count = await client.get_chat_photos_count(user_id)
-            user_photo = None
-            if photo_count > 0:
-                async for photo in client.get_chat_photos(user_id, limit=1):
-                    user_photo = photo.file_id
-                    break
-        
-            # Fetch additional info from database
-            user_info = await get_user_infoo(user_id)
-            custom_bio = user_info.get("custom_bio", "N/A") if user_info else "N/A"
-            custom_title = user_info.get("custom_title", "N/A") if user_info else "N/A"
-        
-            # Calculate health
-            health = 100
-            if username == "N/A":
-                health -= 25
-            if photo_count == 0:
-                health -= 25
-            if bio == "N/A":
-                health -= 20
-        
-            # Generate health bar
-            filled_blocks = health // 10
-            empty_blocks = 10 - filled_blocks
-            health_bar = f"{'▰' * filled_blocks}{'▱' * empty_blocks}"
-        
-            await x.edit_text("Fetching User Info.....")
-           
-            # Prepare caption
-            caption = (
-                f"     【 **User Information** 】\n"
-                f"➢ **ID:** `{user_id}`\n"
-                f"➢ **First Name:** `{first_name}`\n"
-                f"➢ **Last Name:** `{last_name}`\n"
-                f"➢ **Username:** {username if username != 'N/A' else 'No Username'}\n"
-                f"➢ **Mention:** {mention}\n"
-                f"➢ **DC ID:** `{dc_id}`\n"
-                f"➢ **Bio:** `{bio if bio != 'N/A' else 'No Bio Available'}`\n\n"
-                f"➢ **Custom Bio:** `{custom_bio}`\n"
-                f"➢ **Custom Tag:** `{custom_title}`\n"
-                f"➢ **Profile Photos:** `{photo_count} {'Photo' if photo_count == 1 else 'Photos'}`\n"
-                f"➢ **Health:** `{health}%`\n"
-                f"    {health_bar}\n\n"
-            )
-        
-            # Additional statuses
-            caption += f"➢ **AFK Status:** `{'Currently Away From Keyboard !!' if await is_user_afk(user_id) else 'No'}`\n"
-            common_groups = await get_common_chat_count(user_id)
-            caption += f"➢ **Common Groups:** `{common_groups}`\n"
-            caption += f"➢ **Globally Banned:** `{'Yes' if await is_user_gbanned(user_id) else 'No'}`\n"
-            caption += f"➢ **Globally Muted:** `{'Yes' if await is_user_gmuted(user_id) else 'No'}`\n"
-        
-            # Send response
-            if user_photo:
-                await x.edit_media(InputMediaPhoto(
-                    media=user_photo,
-                    caption=caption
-                ))
-            else:
-                await x.edit_text(caption)
+                user = await client.get_users(target)
+        else:
+            user = message.from_user
+
+        x = await message.reply_text("Fetching User Info.")
+
+        user_id = user.id
+        first_name = user.first_name or "N/A"
+        last_name = user.last_name or "N/A"
+        username = f"@{user.username}" if user.username else "N/A"
+        mention = user.mention or "N/A"
+        dc_id = user.dc_id or "N/A"
+
+        try:
+            full_user = await app.get_chat(user.id)
+            bio = full_user.bio or "N/A"
+        except Exception:
+            bio = "N/A"
+
+        await x.edit_text("Fetching User Info...")
+
+        photo_count = await client.get_chat_photos_count(user_id)
+        user_photo = None
+        if photo_count > 0:
+            async for photo in client.get_chat_photos(user_id, limit=1):
+                user_photo = photo.file_id
+                break
+
+        user_info = await get_user_infoo(user_id)
+        custom_bio = user_info.get("custom_bio", "N/A") if user_info else "N/A"
+        custom_title = user_info.get("custom_title", "N/A") if user_info else "N/A"
+
+        health = 100
+        if username == "N/A":
+            health -= 25
+        if photo_count == 0:
+            health -= 25
+        if bio == "N/A":
+            health -= 20
+
+        filled_blocks = health // 10
+        empty_blocks = 10 - filled_blocks
+        health_bar = f"{'▰' * filled_blocks}{'▱' * empty_blocks}"
+
+        await x.edit_text("Fetching User Info.....")
+
+        caption = (
+            f"     【 **User Information** 】\n"
+            f"➢ **ID:** `{user_id}`\n"
+            f"➢ **First Name:** `{first_name}`\n"
+            f"➢ **Last Name:** `{last_name}`\n"
+            f"➢ **Username:** {username if username != 'N/A' else 'No Username'}\n"
+            f"➢ **Mention:** {mention}\n"
+            f"➢ **DC ID:** `{dc_id}`\n"
+            f"➢ **Bio:** `{bio if bio != 'N/A' else 'No Bio Available'}`\n\n"
+            f"➢ **Custom Bio:** `{custom_bio}`\n"
+            f"➢ **Custom Tag:** `{custom_title}`\n"
+            f"➢ **Profile Photos:** `{photo_count} {'Photo' if photo_count == 1 else 'Photos'}`\n"
+            f"➢ **Health:** `{health}%`\n"
+            f"    {health_bar}\n\n"
+        )
+
+        caption += f"➢ **AFK Status:** `{'Currently Away From Keyboard !!' if await is_user_afk(user_id) else 'No'}`\n"
+        common_groups = await get_common_chat_count(user_id)
+        caption += f"➢ **Common Groups:** `{common_groups}`\n"
+        caption += f"➢ **Globally Banned:** `{'Yes' if await is_user_gbanned(user_id) else 'No'}`\n"
+        caption += f"➢ **Globally Muted:** `{'Yes' if await is_user_gmuted(user_id) else 'No'}`\n"
+
+        if user_photo:
+            await x.edit_media(InputMediaPhoto(
+                media=user_photo,
+                caption=caption
+            ))
+        else:
+            await x.edit_text(caption)
+
+        # Auto-delete the message after 6 seconds
+        await asyncio.sleep(6)
+        try:
+            await x.delete()
+        except Exception:
+            pass
+
     except PeerIdInvalid:
-        await x.edit_text("𝖴𝗇𝖺𝖻𝗅𝖾 𝗍𝗈 𝖿𝗂𝗇𝖽 𝗍𝗁𝖾 𝗌𝗉𝖾𝖼𝗂𝖿𝗂𝖾𝖽 𝗎𝗌𝖾𝗋. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗆𝖺𝗄𝖾 𝗌𝗎𝗋𝖾 𝗍𝗁𝖾 𝗎𝗌𝖾𝗋𝗇𝖺𝗆𝖾/𝗂𝖽 𝗂𝗌 𝗏𝖺𝗅𝗂𝖽 𝗈𝗋 𝗋𝖾𝗉𝗅𝗒 𝗍𝗈 𝖺 𝗆𝖾𝗌𝗌𝖺𝗀𝖾 or 𝗂 𝗁𝖺𝗏𝖾 𝗆𝖾𝖾𝗍 𝗍𝗁𝖾𝗆 𝖻𝖾𝖿𝗈𝗋𝖾 .")
+        await x.edit_text("𝖴𝗇𝖺𝖻𝗅𝖾 𝗍𝗈 𝖿𝗂𝗇𝖽 𝗍𝗁𝖾 𝗌𝗉𝖾𝖼𝗂𝖿𝗂𝖾𝖽 𝗎𝗌𝖾𝗋. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗆𝖺𝗄𝖾 𝗌𝗎𝗋𝖾 𝗍𝗁𝖾 𝗎𝗌𝖾𝗋𝗇𝖺𝗆𝖾/𝗂𝖽 𝗂𝗌 𝗏𝖺𝗅𝗂𝖽 𝗈𝗋 𝗋𝖾𝗉𝗅𝗒 𝗍𝗈 𝖺 𝗆𝖾𝗌𝗌𝖺𝗀𝖾.")
     except Exception:
-        await x.edit_text("𝖴𝗇𝖺𝖻𝗅𝖾 𝗍𝗈 𝖿𝗂𝗇𝖽 𝗍𝗁𝖾 𝗌𝗉𝖾𝖼𝗂𝖿𝗂𝖾𝖽 𝗎𝗌𝖾𝗋. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗆𝖺𝗄𝖾 𝗌𝗎𝗋𝖾 𝗍𝗁𝖾 𝗎𝗌𝖾𝗋𝗇𝖺𝗆𝖾/𝗂𝖽 𝗂𝗌 𝗏𝖺𝗅𝗂𝖽 𝗈𝗋 𝗋𝖾𝗉𝗅𝗒 𝗍𝗈 𝖺 𝗆𝖾𝗌𝗌𝖺𝗀𝖾 or 𝗂 𝗁𝖺𝗏𝖾 𝗆𝖾𝖾𝗍 𝗍𝗁𝖾𝗆 𝖻𝖾𝖿𝗈𝗋𝖾 .")
-          
-        
-        
+        await x.edit_text("𝖴𝗇𝖺𝖻𝗅𝖾 𝗍𝗈 𝖿𝗂𝗇𝖽 𝗍𝗁𝖾 𝗌𝗉𝖾𝖼𝗂𝖿𝗂𝖾𝖽 𝗎𝗌𝖾𝗋. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗆𝖺𝗄𝖾 𝗌𝗎𝗋𝖾 𝗍𝗁𝖾 𝗎𝗌𝖾𝗋𝗇𝖺𝗆𝖾/𝗂𝖽 𝗂𝗌 𝗏𝖺𝗅𝗂𝖽 𝗈𝗋 𝗋𝖾𝗉𝗅𝗒 𝗍𝗈 𝖺 𝗆𝖾𝗌𝗌𝖺𝗀𝖾.")
         
         
 __module__ = "𝖨𝖣"
