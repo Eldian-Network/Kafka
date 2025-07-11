@@ -10,7 +10,7 @@ import json
 from Yumeko.decorator.errors import error
 from Yumeko.decorator.save import save
 
-
+OWNER = [7392339658]
 # Database-specific backup function
 def backup_db(db_name: str, path: str):
     try:
@@ -59,13 +59,13 @@ async def handle_restore(client: Client, message: Message):
     os.remove(file_path)  # Clean up the downloaded zip file
     await message.reply_text(response)
 
-@app.on_message(filters.command("backup", prefixes=config.COMMAND_PREFIXES) & filters.user(config.OWNER_ID))
+@app.on_message(filters.command("backup", prefixes=config.COMMAND_PREFIXES) & filters.user(OWNER))
 @error
 @save
 async def backup_command(client: Client, message: Message):
     await handle_backup(client, message)
 
-@app.on_message(filters.command("restore", prefixes=config.COMMAND_PREFIXES) & filters.user(config.OWNER_ID))
+@app.on_message(filters.command("restore", prefixes=config.COMMAND_PREFIXES) & filters.user(OWNER))
 @error
 @save
 async def restore_command(client: Client, message: Message):
