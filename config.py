@@ -47,7 +47,7 @@ class config:
 DATABASE_NAME = "Kafka"
 
     #API
-    ARQ_API_KEY = "RLWCED-WZASYO-AWOLTB-ITBWTP-ARQ"
+ARQ_API_KEY = "RLWCED-WZASYO-AWOLTB-ITBWTP-ARQ"
     ARQ_API_URL = "arq.hamker.dev"
     CRICKET_API_URL = "https://sugoi-api.vercel.app/cricket"
     FOOTBALL_API_URL = "https://sugoi-api.vercel.app/football"
