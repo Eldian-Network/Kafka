@@ -43,9 +43,8 @@ class config:
     ALIVE_IMG_URL = "https://files.catbox.moe/xj52dr.jpg"
     
     
-    #Database
-    MONGODB_URI = "mongodb://localhost:27017"
-    DATABASE_NAME = "Kafka"
+    MONGODB_URI = "mongodb+srv://kafka:kafka123@<your-cluster-name>.mongodb.net/?retryWrites=true&w=majority"
+DATABASE_NAME = "Kafka"
 
     #API
     ARQ_API_KEY = "RLWCED-WZASYO-AWOLTB-ITBWTP-ARQ"
