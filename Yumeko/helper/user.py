@@ -59,7 +59,6 @@ DEMOTE = ChatPrivileges(
                             can_pin_messages = False,
                             can_post_stories = False,
                             can_edit_stories = False,
-                            can_delete_stories = False,
                             is_anonymous = False
             )
 
